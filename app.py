@@ -1,3 +1,4 @@
+import os
 import tempfile
 
 import streamlit as st
@@ -7,7 +8,9 @@ from imagem_rastreio import gerar_imagem_historico
 from ssw_client import consultar_atual_cargas
 from semi_auto import get_portal
 
-st.set_page_config(page_title="Rastreio Automático - Sebem", page_icon="📦", layout="centered")
+LOGO = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "logo.png")
+
+st.set_page_config(page_title="Rastreio Automático - Sebem", page_icon=LOGO, layout="centered")
 
 NOMES_TRANSPORTADORA = {
     "atual_cargas": "Atual Cargas",
@@ -15,7 +18,11 @@ NOMES_TRANSPORTADORA = {
     "expresso_sao_miguel": "Expresso São Miguel",
 }
 
-st.title("📦 Rastreio Automático de Notas")
+col_logo, col_titulo = st.columns([1, 6])
+with col_logo:
+    st.image(LOGO, width=64)
+with col_titulo:
+    st.title("Rastreio Automático de Notas")
 st.caption("Sobe o PDF da nota, confirma os dados e rastreia na transportadora.")
 
 pdf = st.file_uploader("PDF da Nota Fiscal (DANFE)", type=["pdf"])
