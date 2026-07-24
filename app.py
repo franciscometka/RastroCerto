@@ -3,7 +3,7 @@ import tempfile
 
 import streamlit as st
 
-from estilo import aplicar_estilo, hero, hero_cta, partners_strip, topbar, trail_visual
+from estilo import aplicar_estilo, hero, hero_cta, partners_strip, topbar
 from extractor import processar_pdf, TRANSPORTADORAS_CONHECIDAS
 from imagem_rastreio import gerar_imagem_historico
 from ssw_client import consultar_atual_cargas
@@ -32,7 +32,6 @@ hero(
     ),
 )
 hero_cta(st)
-trail_visual(st)
 
 st.markdown('<div id="rastrear"></div>', unsafe_allow_html=True)
 pdf = st.file_uploader("PDF da Nota Fiscal (DANFE)", type=["pdf"])
