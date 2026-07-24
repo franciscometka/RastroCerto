@@ -156,9 +156,11 @@ h1, h2, h3 {
 .trail-card .code { color: var(--ink); font-weight: 500; }
 .trail-card .live { color: var(--accent); font-weight: 500; }
 
-/* ---------- Faixa de transportadoras ---------- */
+/* ---------- Faixa de transportadoras (rodapé) ---------- */
 .partners {
-  margin-top: 52px; margin-bottom: 12px;
+  margin-top: 64px; margin-bottom: 12px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
   display: flex; flex-direction: column; align-items: center; gap: 14px;
 }
 .partners .label {

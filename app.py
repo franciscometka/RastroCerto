@@ -33,7 +33,6 @@ hero(
 )
 hero_cta(st)
 trail_visual(st)
-partners_strip(st, list(NOMES_TRANSPORTADORA.values()))
 
 st.markdown('<div id="rastrear"></div>', unsafe_allow_html=True)
 pdf = st.file_uploader("PDF da Nota Fiscal (DANFE)", type=["pdf"])
@@ -138,3 +137,5 @@ if pdf is not None:
         st.text_input("Número da NF-e (copiar)", value=numero_nf, key="copia_nf")
         st.caption(portal["instrucoes"])
         st.link_button(f"Abrir portal da {portal['nome']} ↗", portal["url"])
+
+partners_strip(st, list(NOMES_TRANSPORTADORA.values()))
