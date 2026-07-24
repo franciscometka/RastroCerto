@@ -80,6 +80,12 @@ h1, h2, h3 {
 }
 
 /* ---------- Hero ---------- */
+.hero {
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center;
+  padding: 40px 8px 20px;
+}
+
 .hero-eyebrow {
   display: inline-flex; align-items: center; gap: 10px;
   font-family: 'IBM Plex Mono', monospace;
@@ -87,7 +93,7 @@ h1, h2, h3 {
   border: 1px solid var(--line);
   background: var(--bg-soft);
   padding: 8px 16px; border-radius: 999px;
-  margin: 4px 0 20px;
+  margin: 4px 0 28px;
 }
 .hero-eyebrow .dot {
   width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
@@ -101,18 +107,18 @@ h1, h2, h3 {
 }
 
 .hero-title {
-  font-size: clamp(30px, 4.5vw, 48px);
-  font-weight: 800; line-height: 1.1; letter-spacing: -0.02em;
-  color: var(--ink); margin: 0;
+  font-size: clamp(34px, 6vw, 60px);
+  font-weight: 800; line-height: 1.06; letter-spacing: -0.02em;
+  color: var(--ink); margin: 0; max-width: 680px;
 }
 .hero-title .accent { color: var(--accent); }
 
 .hero-sub {
-  margin-top: 14px; max-width: 560px;
+  margin: 18px auto 0; max-width: 520px;
   font-size: 16px; line-height: 1.6; color: var(--ink-dim); font-weight: 500;
 }
 
-.hero-cta-row { margin-top: 28px; display: flex; gap: 14px; flex-wrap: wrap; }
+.hero-cta-row { margin-top: 32px; display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
 .hero-cta-row a { display: inline-block; }
 .btn-primary {
   background: var(--ink); color: var(--bg);
@@ -129,7 +135,7 @@ h1, h2, h3 {
 .btn-ghost:hover { color: var(--ink); border-color: rgba(255,255,255,0.24); }
 
 /* ---------- Trilha ---------- */
-.trail-visual { margin-top: 56px; display: flex; align-items: center; gap: 0; flex-wrap: wrap; }
+.trail-visual { margin-top: 56px; display: flex; align-items: center; justify-content: center; gap: 0; flex-wrap: wrap; }
 .trail-track { display: flex; align-items: flex-end; gap: 18px; height: 50px; }
 .trail-dot { border-radius: 50%; background: var(--accent); animation: rise 2.6s ease-in-out infinite; }
 .trail-dot:nth-child(1) { width: 7px; height: 7px; opacity: 0.35; animation-delay: 0s; }
@@ -151,13 +157,18 @@ h1, h2, h3 {
 .trail-card .live { color: var(--accent); font-weight: 500; }
 
 /* ---------- Faixa de transportadoras ---------- */
-.partners { margin-top: 52px; margin-bottom: 12px; }
+.partners {
+  margin-top: 52px; margin-bottom: 12px;
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
 .partners .label {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 11.5px; letter-spacing: 0.08em; color: var(--ink-dim); opacity: 0.7;
-  margin-bottom: 14px;
 }
-.partners .row { display: flex; gap: 32px; flex-wrap: wrap; font-weight: 700; font-size: 14px; color: rgba(245,242,232,0.55); }
+.partners .row {
+  display: flex; gap: 32px; flex-wrap: wrap; justify-content: center;
+  font-weight: 700; font-size: 14px; color: rgba(245,242,232,0.55);
+}
 
 /* ---------- Componentes Streamlit ---------- */
 div[data-testid="stButton"] > button,
@@ -223,9 +234,11 @@ def topbar(st) -> None:
 
 def hero(st, eyebrow: str, titulo_html: str, subtitulo: str) -> None:
     st.markdown(
+        '<div class="hero">'
         f'<div class="hero-eyebrow"><span class="dot"></span>{eyebrow}</div>'
         f'<div class="hero-title">{titulo_html}</div>'
-        f'<div class="hero-sub">{subtitulo}</div>',
+        f'<div class="hero-sub">{subtitulo}</div>'
+        "</div>",
         unsafe_allow_html=True,
     )
 
