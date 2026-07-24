@@ -3,6 +3,7 @@ import tempfile
 
 import streamlit as st
 
+from estilo import aplicar_estilo, hero
 from extractor import processar_pdf, TRANSPORTADORAS_CONHECIDAS
 from imagem_rastreio import gerar_imagem_historico
 from ssw_client import consultar_atual_cargas
@@ -11,6 +12,7 @@ from semi_auto import get_portal
 LOGO = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "logo.png")
 
 st.set_page_config(page_title="Rastreio Automático - Sebem", page_icon=LOGO, layout="centered")
+aplicar_estilo(st)
 
 NOMES_TRANSPORTADORA = {
     "atual_cargas": "Atual Cargas",
@@ -22,8 +24,18 @@ col_logo, col_titulo = st.columns([1, 6])
 with col_logo:
     st.image(LOGO, width=64)
 with col_titulo:
-    st.title("Rastreio Automático de Notas")
-st.caption("Sobe o PDF da nota, confirma os dados e rastreia na transportadora.")
+    st.markdown("### Rastreio Automático de Notas")
+
+hero(
+    st,
+    eyebrow="Sobe a nota, a gente acha a encomenda",
+    titulo_html='Rastreie a entrega<br>sem sair <span class="accent">caçando link</span>',
+    subtitulo=(
+        "Sobe o PDF da nota fiscal e o sistema extrai o CPF/CNPJ e o número "
+        "da NF automaticamente, identifica a transportadora e já traz o "
+        "status da entrega."
+    ),
+)
 
 pdf = st.file_uploader("PDF da Nota Fiscal (DANFE)", type=["pdf"])
 
