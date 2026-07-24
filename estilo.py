@@ -137,12 +137,6 @@ header[data-testid="stHeader"] { display: none; }
   transition: transform .18s ease, background .18s ease;
 }
 .btn-primary:hover { transform: translateY(-2px); background: var(--accent); color: var(--bg); }
-.btn-ghost {
-  padding: 13px 24px; border-radius: 999px;
-  border: 1px solid var(--line); color: var(--ink-dim);
-  font-weight: 700; font-size: 14.5px;
-}
-.btn-ghost:hover { color: var(--ink); border-color: rgba(255,255,255,0.24); }
 
 /* ---------- Faixa de transportadoras (rodapé) ---------- */
 .partners {
@@ -237,7 +231,6 @@ def hero_cta(st) -> None:
     st.markdown(
         '<div class="hero-cta-row">'
         '<a class="btn-primary" href="#rastrear">Rastrear uma nota</a>'
-        '<a class="btn-ghost" href="#">Como funciona</a>'
         "</div>",
         unsafe_allow_html=True,
     )
