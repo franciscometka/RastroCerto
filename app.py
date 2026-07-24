@@ -76,6 +76,9 @@ if pdf is not None:
 
                 if not resultado["sucesso"]:
                     st.error(f"Erro na consulta: {resultado['erro']}")
+                elif resultado.get("historico"):
+                    st.success("Rastreamento encontrado:")
+                    st.table(resultado["historico"])
                 elif resultado["eventos"]:
                     st.success("Resultado encontrado:")
                     st.table(resultado["eventos"])

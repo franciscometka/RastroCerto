@@ -30,13 +30,20 @@ dentro da célula de situação (usado só pra destacar o texto em negrito,
 não é aviso de "não encontrado") - por isso o parser não pode simplesmente
 pular qualquer linha que contenha essa classe, tem que olhar a forma da
 linha (1 <td> com colspan = aviso; 3 <td> = evento real).
+
+A tabela de resumo (resultSSW_dest_nro) só traz a última situação de cada
+NF. Pra pegar o histórico completo (todas as unidades por onde passou),
+tem um link "Mais detalhes" na resposta que aponta pra
+/2/SSWDetalhado?id=...&md=... - esse link é seguido automaticamente
+(_extrair_link_detalhe + _parsear_detalhe) pra montar o "historico".
 """
 
 import re
 import requests
 from bs4 import BeautifulSoup
 
-SSW_URL = "https://ssw.inf.br/2/resultSSW_dest_nro"
+SSW_BASE = "https://ssw.inf.br"
+SSW_URL = f"{SSW_BASE}/2/resultSSW_dest_nro"
 
 
 def _somente_digitos(s: str) -> str:
@@ -48,7 +55,12 @@ def consultar_atual_cargas(cnpj_cpf: str, numeros_nf: list[str], senha: str = ""
 
     Retorna dict com:
       - sucesso: bool (False só em caso de falha de rede/HTTP)
-      - eventos: lista de dicts (quando conseguir estruturar a tabela)
+      - eventos: lista de dicts com a última situação de cada NF (tabela
+        resumida devolvida na primeira consulta)
+      - historico: lista de dicts com o histórico completo (todas as
+        unidades/eventos), seguindo o link "Mais detalhes" da primeira NF -
+        vazio se não achou o link ou a página de detalhe não bateu com o
+        formato esperado
       - mensagem: texto informativo do próprio SSW (ex: "CNPJ inválido",
         "nenhuma informação encontrada") - não é um erro nosso, é resposta
         do site
@@ -69,16 +81,87 @@ def consultar_atual_cargas(cnpj_cpf: str, numeros_nf: list[str], senha: str = ""
         resp = requests.post(SSW_URL, data=payload, headers=headers, timeout=20)
         resp.raise_for_status()
     except requests.RequestException as e:
-        return {"sucesso": False, "eventos": [], "mensagem": None, "html_bruto": "", "erro": str(e)}
+        return {
+            "sucesso": False,
+            "eventos": [],
+            "historico": [],
+            "mensagem": None,
+            "html_bruto": "",
+            "erro": str(e),
+        }
 
     eventos, mensagem = _parsear_resultado(resp.text)
+
+    historico = []
+    link_detalhe = _extrair_link_detalhe(resp.text)
+    if link_detalhe:
+        try:
+            resp_detalhe = requests.get(link_detalhe, headers=headers, timeout=20)
+            resp_detalhe.raise_for_status()
+            historico = _parsear_detalhe(resp_detalhe.text)
+        except requests.RequestException:
+            pass  # sem histórico detalhado, mas a consulta resumida já funcionou
+
     return {
         "sucesso": True,
         "eventos": eventos,
+        "historico": historico,
         "mensagem": mensagem,
         "html_bruto": resp.text,
         "erro": None,
     }
+
+
+def _extrair_link_detalhe(html: str) -> str | None:
+    """Acha o link 'Mais detalhes' (opx('/2/SSWDetalhado?id=...&md=...'))
+    na resposta resumida e monta a URL completa. Se tiver mais de uma NF
+    na consulta, pega o primeiro link encontrado."""
+    m = re.search(r"opx\('(/2/(?:ssw_)?SSWDetalhado\?[^']+)'\)", html)
+    if not m:
+        return None
+    return SSW_BASE + m.group(1)
+
+
+def _parsear_detalhe(html: str) -> list[dict]:
+    """Extrai o histórico completo de eventos da página de detalhe
+    (/2/SSWDetalhado). Cada linha real tem 3 <td class="rastreamento">
+    (Data/Hora, Unidade, Situação) - as linhas espaçadoras entre eventos
+    não têm essa classe, então dá pra filtrar direto por ela."""
+    soup = BeautifulSoup(html, "html.parser")
+
+    tabela = None
+    for t in soup.find_all("table"):
+        if t.find(class_="tdresult"):
+            tabela = t
+            break
+    if tabela is None:
+        return []
+
+    eventos = []
+    for linha in tabela.find_all("tr"):
+        celulas = linha.find_all("td", class_="rastreamento")
+        if len(celulas) != 3:
+            continue
+
+        data_hora = _limpar_celula(celulas[0].get_text(separator=" ", strip=True))
+        unidade = _limpar_celula(celulas[1].get_text(separator=" ", strip=True))
+
+        titulo_el = celulas[2].find("p", class_="titulo")
+        situacao = _limpar_celula(titulo_el.get_text(strip=True)) if titulo_el else ""
+        detalhe_el = celulas[2].find("p", class_="tdb")
+        detalhe = _limpar_celula(detalhe_el.get_text(strip=True)) if detalhe_el else ""
+
+        if not any([data_hora, unidade, situacao, detalhe]):
+            continue
+
+        eventos.append({
+            "Data/Hora": data_hora,
+            "Unidade": unidade,
+            "Situação": situacao,
+            "Detalhe": detalhe,
+        })
+
+    return eventos
 
 
 def _limpar_celula(texto: str) -> str:
