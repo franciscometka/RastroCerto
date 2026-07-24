@@ -1,3 +1,4 @@
+import html
 import tempfile
 
 import streamlit as st
@@ -5,6 +6,45 @@ import streamlit as st
 from extractor import processar_pdf, TRANSPORTADORAS_CONHECIDAS
 from ssw_client import consultar_atual_cargas
 from semi_auto import get_portal
+
+
+def render_historico(historico: list[dict]) -> str:
+    """Monta uma tabela HTML parecida com a do 'Rastreamento detalhado' do
+    site da Atual Cargas (título da situação em destaque, linhas
+    alternadas), em vez do st.table genérico do Streamlit.
+
+    Importante: o HTML não pode ter indentação nas linhas quando passado
+    pro st.markdown - 4+ espaços no início da linha fazem o Markdown
+    interpretar como bloco de código e mostrar as tags cruas em vez de
+    renderizar."""
+    td_style = "padding:8px 10px;border:1px solid #444;vertical-align:top;"
+    linhas_html = []
+    for i, evento in enumerate(historico):
+        cor_fundo = "#ffffff" if i % 2 == 0 else "#f4f4f4"
+        data_hora = html.escape(evento.get("Data/Hora", ""))
+        unidade = html.escape(evento.get("Unidade", ""))
+        situacao = html.escape(evento.get("Situação", ""))
+        detalhe = html.escape(evento.get("Detalhe", ""))
+        linhas_html.append(
+            f'<tr style="background-color:{cor_fundo};">'
+            f'<td style="{td_style}white-space:nowrap;">{data_hora}</td>'
+            f'<td style="{td_style}white-space:nowrap;">{unidade}</td>'
+            f'<td style="{td_style}">'
+            f'<b style="color:#e63946;">{situacao}</b><br>'
+            f'<span style="color:#bbb;font-size:0.9em;">{detalhe}</span>'
+            f"</td></tr>"
+        )
+
+    th_style = "padding:8px 10px;border:1px solid #444;text-align:left;"
+    linhas = "".join(linhas_html)
+    return (
+        '<table style="width:100%;border-collapse:collapse;font-size:0.85rem;">'
+        f'<tr style="background-color:#2b2b2b;color:#fff;">'
+        f'<th style="{th_style}">Data/Hora</th>'
+        f'<th style="{th_style}">Unidade</th>'
+        f'<th style="{th_style}">Situação</th>'
+        f"</tr>{linhas}</table>"
+    )
 
 st.set_page_config(page_title="Rastreio Automático - Sebem", page_icon="📦", layout="centered")
 
@@ -78,7 +118,7 @@ if pdf is not None:
                     st.error(f"Erro na consulta: {resultado['erro']}")
                 elif resultado.get("historico"):
                     st.success("Rastreamento encontrado:")
-                    st.table(resultado["historico"])
+                    st.markdown(render_historico(resultado["historico"]), unsafe_allow_html=True)
                 elif resultado["eventos"]:
                     st.success("Resultado encontrado:")
                     st.table(resultado["eventos"])
