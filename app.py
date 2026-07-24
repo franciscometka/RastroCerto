@@ -3,6 +3,7 @@ import tempfile
 import streamlit as st
 
 from extractor import processar_pdf, TRANSPORTADORAS_CONHECIDAS
+from ssw_client import consultar_atual_cargas
 from semi_auto import get_portal
 
 st.set_page_config(page_title="Rastreio Automático - Sebem", page_icon="📦", layout="centered")
@@ -65,12 +66,39 @@ if pdf is not None:
 
     st.divider()
 
-    portal = get_portal(transportadora_id)
-    st.info(
-        f"Rastreio da **{portal['nome']}** é manual (1 clique): copia os "
-        f"dados abaixo e cola no portal."
-    )
-    st.text_input("CPF/CNPJ (copiar)", value=cnpj_cpf, key="copia_cnpj")
-    st.text_input("Número da NF-e (copiar)", value=numero_nf, key="copia_nf")
-    st.caption(portal["instrucoes"])
-    st.link_button(f"Abrir portal da {portal['nome']} ↗", portal["url"])
+    if transportadora_id == "atual_cargas":
+        if st.button("🔎 Rastrear na Atual Cargas", type="primary"):
+            if not cnpj_cpf or not numero_nf:
+                st.error("Preenche CPF/CNPJ e número da NF antes de rastrear.")
+            else:
+                with st.spinner("Consultando..."):
+                    resultado = consultar_atual_cargas(cnpj_cpf, [numero_nf])
+
+                if not resultado["sucesso"]:
+                    st.error(f"Erro na consulta: {resultado['erro']}")
+                elif resultado["eventos"]:
+                    st.success("Resultado encontrado:")
+                    st.table(resultado["eventos"])
+                    if resultado.get("mensagem"):
+                        st.caption(resultado["mensagem"])
+                elif resultado.get("mensagem"):
+                    st.warning(resultado["mensagem"])
+                else:
+                    st.warning(
+                        "Não consegui estruturar uma tabela de eventos automaticamente. "
+                        "Vê a resposta bruta abaixo - se aparecer errado, me manda esse "
+                        "HTML que eu ajusto o parser."
+                    )
+                    with st.expander("Resposta bruta do site (debug)"):
+                        st.code(resultado["html_bruto"], language="html")
+
+    else:
+        portal = get_portal(transportadora_id)
+        st.info(
+            f"**{portal['nome']}** tem captcha no site, então essa parte é manual "
+            f"(1 clique): copia os dados abaixo e cola no portal."
+        )
+        st.text_input("CPF/CNPJ (copiar)", value=cnpj_cpf, key="copia_cnpj")
+        st.text_input("Número da NF-e (copiar)", value=numero_nf, key="copia_nf")
+        st.caption(portal["instrucoes"])
+        st.link_button(f"Abrir portal da {portal['nome']} ↗", portal["url"])

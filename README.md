@@ -1,21 +1,12 @@
 # Rastreio Automático de Notas - Sebem
 
 App em Streamlit: sobe o PDF da nota fiscal, extrai CNPJ/CPF do destinatário
-e número da NF, detecta a transportadora e prepara o rastreio.
+e número da NF, detecta a transportadora e rastreia.
 
-As 3 transportadoras (**Atual Cargas**, **Rodonaves** e **Expresso São
-Miguel**) são semi-automáticas: o app extrai e mostra os dados prontos pra
-copiar, com um botão que abre o portal certo numa aba nova. O clique final
-(e o captcha, quando tem) é manual.
-
-- Rodonaves e Expresso São Miguel têm reCAPTCHA visível no formulário.
-- Atual Cargas não tem captcha visível, mas o portal novo deles
-  (`cliente.atualcargas.com.br`) é uma SPA cuja API de rastreio rejeita
-  requisições feitas fora da navegação real da página ("token inválido") -
-  indício de alguma proteção anti-bot própria. Por isso ela também ficou
-  semi-automática, em vez de consultada de ponta a ponta como se imaginava
-  no início do projeto (o formulário antigo do `ssw.inf.br` que seria usado
-  pra isso não reflete mais os dados reais da transportadora e foi removido).
+- **Atual Cargas**: automático de ponta a ponta (sem captcha no site deles).
+- **Rodonaves** e **Expresso São Miguel**: têm captcha/reCAPTCHA, então o app
+  só prepara os dados e abre o portal certo - falta 1 clique manual (resolver
+  o captcha e apertar rastrear).
 
 ## Rodar localmente
 
@@ -23,6 +14,39 @@ copiar, com um botão que abre o portal certo numa aba nova. O clique final
 pip install -r requirements.txt
 streamlit run app.py
 ```
+
+## Pegadinha resolvida: URL certa da Atual Cargas no ssw.inf.br
+
+O formulário "Rastreamento pelo destinatário" do ssw.inf.br
+(`https://ssw.inf.br/2/rastreamento_dest?pwd=2`) tem duas variantes que
+parecem idênticas na tela mas submetem pra **actions diferentes**
+(confirmado lendo `https://ssw.inf.br/scripts/rastreamento4.js`):
+
+- "Pelo destinatário - **30 dias**" → `/2/resultSSW_dest` (só shipments
+  recentes; na prática deu "nenhuma informação encontrada" até pra notas
+  reais e válidas).
+- "Pelo destinatário" (sem limite de dias) → **`/2/resultSSW_dest_nro`**
+  (essa é a que funciona de verdade).
+
+`ssw_client.py` já usa a URL certa (`resultSSW_dest_nro`). Se um dia parar
+de achar resultado de novo, o jeito de confirmar é abrir o formulário num
+navegador de verdade, testar uma nota que você sabe que existe, e ver pra
+qual `action` ele está de fato submetendo.
+
+Detalhe do parser: a linha de um evento real pode ter um
+`<p class="titulo">` dentro da célula de situação (só pra destacar o texto
+em negrito) - isso não pode ser confundido com a linha de aviso de "nada
+encontrado" (que tem uma estrutura diferente: 1 único `<td colspan=...>`).
+
+## Sobre o portal novo da Atual Cargas (cliente.atualcargas.com.br)
+
+A Atual Cargas também tem um portal mais novo em
+`cliente.atualcargas.com.br`, com uma API própria
+(`/api/rastreio/deslogado`). Não usamos essa API porque ela rejeitou
+requisições feitas fora da navegação real da página com "token inválido" -
+parece ter alguma proteção anti-bot própria, e não vale a pena tentar
+contornar. Ficamos com o `ssw.inf.br` mesmo, que funciona bem com a URL
+certa.
 
 ## Próximos passos / pontos de atenção
 
@@ -32,10 +56,5 @@ streamlit run app.py
    e a extração errar, me manda o PDF (pode tampar dados sensíveis que não
    importem pro teste) e eu ajusto os padrões de busca.
 
-2. **Atual Cargas automática de verdade**: só dá pra reconsiderar se a
-   Atual Cargas tiver uma API oficial com credenciais (perguntar direto pra
-   transportadora). Não vale a pena tentar contornar a proteção do portal
-   deles.
-
-3. **Deploy**: mesmo fluxo do Trayo - sobe num repositório no GitHub e
+2. **Deploy**: mesmo fluxo do Trayo - sobe num repositório no GitHub e
    conecta no Streamlit Cloud.
