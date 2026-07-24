@@ -85,6 +85,7 @@ def consultar_atual_cargas(cnpj_cpf: str, numeros_nf: list[str], senha: str = ""
             "sucesso": False,
             "eventos": [],
             "historico": [],
+            "info": {},
             "mensagem": None,
             "html_bruto": "",
             "erro": str(e),
@@ -93,12 +94,14 @@ def consultar_atual_cargas(cnpj_cpf: str, numeros_nf: list[str], senha: str = ""
     eventos, mensagem = _parsear_resultado(resp.text)
 
     historico = []
+    info = {}
     link_detalhe = _extrair_link_detalhe(resp.text)
     if link_detalhe:
         try:
             resp_detalhe = requests.get(link_detalhe, headers=headers, timeout=20)
             resp_detalhe.raise_for_status()
             historico = _parsear_detalhe(resp_detalhe.text)
+            info = _extrair_info_cabecalho(resp_detalhe.text)
         except requests.RequestException:
             pass  # sem histórico detalhado, mas a consulta resumida já funcionou
 
@@ -106,10 +109,28 @@ def consultar_atual_cargas(cnpj_cpf: str, numeros_nf: list[str], senha: str = ""
         "sucesso": True,
         "eventos": eventos,
         "historico": historico,
+        "info": info,
         "mensagem": mensagem,
         "html_bruto": resp.text,
         "erro": None,
     }
+
+
+def _extrair_info_cabecalho(html: str) -> dict:
+    """Extrai os dados do cabeçalho da página de detalhe: destinatário,
+    previsão de entrega, N Fiscal e N Pedido."""
+    info = {}
+    padroes = {
+        "destinatario": r'Destinat[aá]rio:</span>\s*<span[^>]*>([^<]*)</span>',
+        "previsao_entrega": r'Previs[aã]o de entrega:<span[^>]*>([^<]*)</span>',
+        "n_fiscal": r'N Fiscal:</span>\s*<span[^>]*>([^<]*)</span>',
+        "n_pedido": r'N Pedido:</span>\s*<span[^>]*>([^<]*)</span>',
+    }
+    for chave, padrao in padroes.items():
+        m = re.search(padrao, html)
+        if m:
+            info[chave] = _limpar_celula(m.group(1))
+    return info
 
 
 def _extrair_link_detalhe(html: str) -> str | None:
