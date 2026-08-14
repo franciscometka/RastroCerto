@@ -42,8 +42,8 @@ import re
 import requests
 from bs4 import BeautifulSoup
 
-SSW_BASE = "https://ssw.inf.br"
-SSW_URL = f"{SSW_BASE}/2/resultSSW_dest_nro"
+from config import HTTP_TIMEOUT, SSW_BASE, SSW_URL
+from http_utils import criar_sessao
 
 
 def _somente_digitos(s: str) -> str:
@@ -61,6 +61,8 @@ def consultar_atual_cargas(cnpj_cpf: str, numeros_nf: list[str], senha: str = ""
         unidades/eventos), seguindo o link "Mais detalhes" da primeira NF -
         vazio se não achou o link ou a página de detalhe não bateu com o
         formato esperado
+      - info: dados do cabeçalho da página de detalhe (destinatário,
+        previsão de entrega, N Fiscal, N Pedido)
       - mensagem: texto informativo do próprio SSW (ex: "CNPJ inválido",
         "nenhuma informação encontrada") - não é um erro nosso, é resposta
         do site
@@ -72,13 +74,11 @@ def consultar_atual_cargas(cnpj_cpf: str, numeros_nf: list[str], senha: str = ""
         "NR": "\n".join(numeros_nf),
         "chave": senha or "",
     }
-    headers = {
-        "User-Agent": "Mozilla/5.0 (compatible; Sebem-Rastreio/1.0)",
-        "Content-Type": "application/x-www-form-urlencoded",
-    }
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    sessao = criar_sessao()
 
     try:
-        resp = requests.post(SSW_URL, data=payload, headers=headers, timeout=20)
+        resp = sessao.post(SSW_URL, data=payload, headers=headers, timeout=HTTP_TIMEOUT)
         resp.raise_for_status()
     except requests.RequestException as e:
         return {
@@ -98,7 +98,7 @@ def consultar_atual_cargas(cnpj_cpf: str, numeros_nf: list[str], senha: str = ""
     link_detalhe = _extrair_link_detalhe(resp.text)
     if link_detalhe:
         try:
-            resp_detalhe = requests.get(link_detalhe, headers=headers, timeout=20)
+            resp_detalhe = sessao.get(link_detalhe, timeout=HTTP_TIMEOUT)
             resp_detalhe.raise_for_status()
             historico = _parsear_detalhe(resp_detalhe.text)
             info = _extrair_info_cabecalho(resp_detalhe.text)

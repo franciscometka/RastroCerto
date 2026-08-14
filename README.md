@@ -15,6 +15,20 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
+## Estrutura do projeto
+
+- `app.py` — tela principal (Streamlit): orquestra upload → extração → rastreio
+- `config.py` — constantes centralizadas: nomes das transportadoras, paletas de cor (tema da UI + cores da imagem), URLs e parâmetros de rede
+- `extractor.py` — extração de dados do PDF (CNPJ/CPF, número da NF, transportadora)
+- `validators.py` — validação de CPF/CNPJ (dígito verificador) e número da NF, pra avisar antes de rastrear se a extração pegou algo inválido
+- `ssw_client.py` — automação da Atual Cargas (scraping do formulário SSW, sem captcha)
+- `semi_auto.py` — links/instruções das transportadoras com captcha (Rodonaves, Expresso São Miguel)
+- `resultado_display.py` — formatação dos resultados na tela
+- `imagem_rastreio.py` — gera a imagem PNG baixável do histórico, no estilo do site da Atual Cargas
+- `estilo.py` — CSS/tema do app (fundo escuro + amarelo), monta o `:root` a partir de `config.TEMA`
+- `http_utils.py` — sessão HTTP com retry automático, usada pelo `ssw_client`
+- `assets/` — logo (favicon + cabeçalho) e fontes DejaVu Sans (usadas na imagem PNG)
+
 ## Pegadinha resolvida: URL certa da Atual Cargas no ssw.inf.br
 
 O formulário "Rastreamento pelo destinatário" do ssw.inf.br

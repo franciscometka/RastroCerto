@@ -1,25 +1,18 @@
-import os
 import tempfile
 
 import streamlit as st
 
+from config import LOGO_PATH, NOMES_TRANSPORTADORA, PAGE_TITLE
 from estilo import aplicar_estilo, hero, hero_cta, partners_strip, topbar
-from extractor import processar_pdf, TRANSPORTADORAS_CONHECIDAS
-from imagem_rastreio import gerar_imagem_historico
-from ssw_client import consultar_atual_cargas
+from extractor import processar_pdf
+from resultado_display import mostrar_portal_manual, mostrar_resultado_atual_cargas
 from semi_auto import get_portal
+from ssw_client import consultar_atual_cargas
+from validators import documento_valido, numero_nf_valido
 
-LOGO = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "logo.png")
-
-st.set_page_config(page_title="Rastreio Automático - Sebem", page_icon=LOGO, layout="centered")
+st.set_page_config(page_title=PAGE_TITLE, page_icon=LOGO_PATH, layout="centered")
 aplicar_estilo(st)
 topbar(st)
-
-NOMES_TRANSPORTADORA = {
-    "atual_cargas": "Atual Cargas",
-    "rodonaves": "Rodonaves",
-    "expresso_sao_miguel": "Expresso São Miguel",
-}
 
 hero(
     st,
@@ -78,6 +71,16 @@ if pdf is not None:
             "confirma/completa os campos acima antes de rastrear."
         )
 
+    # Validação de dígito verificador: pega erro grosseiro de extração antes
+    # de fazer uma consulta que com certeza não acharia nada.
+    if cnpj_cpf and not documento_valido(cnpj_cpf):
+        st.warning(
+            "O CPF/CNPJ acima não parece válido (dígito verificador não bate) "
+            "- confere se a extração pegou o número certo antes de rastrear."
+        )
+    if numero_nf and not numero_nf_valido(numero_nf):
+        st.warning("O número da NF-e acima não parece válido - confere antes de rastrear.")
+
     with st.expander("Texto extraído do PDF (pra depurar, se algo vier errado)"):
         st.text(dados.get("texto_bruto", ""))
 
@@ -90,51 +93,9 @@ if pdf is not None:
             else:
                 with st.spinner("Consultando..."):
                     resultado = consultar_atual_cargas(cnpj_cpf, [numero_nf])
-
-                if not resultado["sucesso"]:
-                    st.error(f"Erro na consulta: {resultado['erro']}")
-                elif resultado.get("historico"):
-                    st.success("Rastreamento encontrado:")
-                    info = resultado.get("info", {})
-                    imagem_png = gerar_imagem_historico(
-                        resultado["historico"],
-                        destinatario=info.get("destinatario", ""),
-                        n_fiscal=info.get("n_fiscal", ""),
-                        n_pedido=info.get("n_pedido", ""),
-                        previsao_entrega=info.get("previsao_entrega", ""),
-                    )
-                    st.image(imagem_png)
-                    st.download_button(
-                        "📥 Baixar imagem do rastreio",
-                        data=imagem_png,
-                        file_name=f"rastreio_{numero_nf}.png",
-                        mime="image/png",
-                    )
-                elif resultado["eventos"]:
-                    st.success("Resultado encontrado:")
-                    st.table(resultado["eventos"])
-                    if resultado.get("mensagem"):
-                        st.caption(resultado["mensagem"])
-                elif resultado.get("mensagem"):
-                    st.warning(resultado["mensagem"])
-                else:
-                    st.warning(
-                        "Não consegui estruturar uma tabela de eventos automaticamente. "
-                        "Vê a resposta bruta abaixo - se aparecer errado, me manda esse "
-                        "HTML que eu ajusto o parser."
-                    )
-                    with st.expander("Resposta bruta do site (debug)"):
-                        st.code(resultado["html_bruto"], language="html")
-
+                mostrar_resultado_atual_cargas(st, resultado, numero_nf)
     else:
         portal = get_portal(transportadora_id)
-        st.info(
-            f"**{portal['nome']}** tem captcha no site, então essa parte é manual "
-            f"(1 clique): copia os dados abaixo e cola no portal."
-        )
-        st.text_input("CPF/CNPJ (copiar)", value=cnpj_cpf, key="copia_cnpj")
-        st.text_input("Número da NF-e (copiar)", value=numero_nf, key="copia_nf")
-        st.caption(portal["instrucoes"])
-        st.link_button(f"Abrir portal da {portal['nome']} ↗", portal["url"])
+        mostrar_portal_manual(st, portal, cnpj_cpf, numero_nf)
 
 partners_strip(st, list(NOMES_TRANSPORTADORA.values()))

@@ -12,32 +12,25 @@ mudam de hash entre versões do Streamlit - data-testid é o jeito estável
 de mirar nos componentes.
 """
 
-import base64
-import os
-
-_DIR = os.path.dirname(os.path.abspath(__file__))
-_LOGO_B64_PATH = os.path.join(_DIR, "assets", "logo_b64.txt")
+from config import APP_NOME, LOGO_B64_PATH, TEMA
 
 
 def _logo_base64() -> str:
-    with open(_LOGO_B64_PATH, encoding="ascii") as f:
+    with open(LOGO_B64_PATH, encoding="ascii") as f:
         return f.read().strip()
 
+
+# :root montado a partir de config.TEMA (fonte única da paleta) - o resto do
+# CSS abaixo só referencia var(--x).
+_ROOT = ":root {\n" + "\n".join(f"  --{k}: {v};" for k, v in TEMA.items()) + "\n}"
 
 CSS = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
-:root {
-  --bg: #050505;
-  --bg-soft: #121212;
-  --line: rgba(255,255,255,0.09);
-  --ink: #F5F2E8;
-  --ink-dim: #9A968A;
-  --accent: #F4BE41;
-}
+__ROOT__
 
-.stApp {
+.stApp {""".replace("__ROOT__", _ROOT) + """
   background: var(--bg);
   font-family: 'Manrope', sans-serif;
 }
@@ -203,7 +196,7 @@ def topbar(st) -> None:
         '<div class="topbar">'
         '<a class="brand" href="#">'
         f'<img src="data:image/png;base64,{logo_b64}" alt="logo">'
-        "<span>Rastreio Sebem</span>"
+        f"<span>{APP_NOME}</span>"
         "</a>"
         '<nav class="topnav">'
         '<a href="#rastrear">Rastrear</a>'

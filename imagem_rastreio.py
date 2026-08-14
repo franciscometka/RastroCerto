@@ -10,22 +10,19 @@ DejaVu Sans empacotadas em assets/, pra ficar consistente tanto local
 Windows disponíveis).
 """
 
-import os
 from io import BytesIO
 
 from PIL import Image, ImageDraw, ImageFont
 
-_DIR = os.path.dirname(os.path.abspath(__file__))
-_FONTE_REGULAR = os.path.join(_DIR, "assets", "DejaVuSans.ttf")
-_FONTE_BOLD = os.path.join(_DIR, "assets", "DejaVuSans-Bold.ttf")
+from config import CORES_IMAGEM, FONTE_BOLD as _FONTE_BOLD, FONTE_REGULAR as _FONTE_REGULAR
 
-COR_AZUL = (26, 62, 116)
-COR_VERMELHO = (214, 40, 40)
-COR_CINZA_TEXTO = (110, 110, 110)
-COR_CINZA_HEADER = (150, 150, 150)
-COR_LINHA_PAR = (255, 255, 255)
-COR_LINHA_IMPAR = (240, 240, 240)
-COR_BORDA = (210, 210, 210)
+COR_AZUL = CORES_IMAGEM["azul"]
+COR_VERMELHO = CORES_IMAGEM["vermelho"]
+COR_CINZA_TEXTO = CORES_IMAGEM["cinza_texto"]
+COR_CINZA_HEADER = CORES_IMAGEM["cinza_header"]
+COR_LINHA_PAR = CORES_IMAGEM["linha_par"]
+COR_LINHA_IMPAR = CORES_IMAGEM["linha_impar"]
+COR_BORDA = CORES_IMAGEM["borda"]
 
 LARGURA = 780
 MARGEM = 24
