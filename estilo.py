@@ -1,8 +1,9 @@
 """
 CSS + marcação customizada do app: fundo escuro com o azul da marca (a
 mesma cor da logo) como destaque, fonte Manrope/IBM Plex Mono, barra fixa
-no topo (por cima da barra padrão do Streamlit, que fica escondida), hero
-com brilho azul suave e faixa de transportadoras no rodapé.
+no topo (por cima da barra padrão do Streamlit, que fica escondida) e
+faixa de transportadoras no rodapé. Visual chapado de propósito - sem
+glow, pulso ou sombra neon.
 
 A paleta vem toda de config.TEMA (o :root do CSS é montado a partir dela),
 então pra trocar as cores mexe lá, não aqui - só os valores rgba() dos
@@ -75,8 +76,8 @@ header[data-testid="stHeader"] { display: none; }
 .topnav a:hover { color: var(--ink); }
 .topnav .nav-cta {
   background: var(--accent); color: #fff !important;
-  padding: 9px 18px; border-radius: 999px;
-  font-weight: 700; font-size: 13.5px;
+  padding: 8px 16px; border-radius: 8px;
+  font-weight: 600; font-size: 13.5px;
 }
 .topnav .nav-cta:hover { background: var(--accent-hover); color: #fff !important; }
 
@@ -89,7 +90,6 @@ header[data-testid="stHeader"] { display: none; }
   display: flex; flex-direction: column; align-items: center;
   text-align: center;
   padding: 40px 8px 20px;
-  background: radial-gradient(620px 340px at 50% 6%, rgba(30,80,255,0.16), transparent 70%);
 }
 
 .hero-eyebrow {
@@ -98,18 +98,12 @@ header[data-testid="stHeader"] { display: none; }
   font-size: 12.5px; letter-spacing: 0.06em; color: var(--ink-dim);
   border: 1px solid var(--line);
   background: var(--bg-soft);
-  padding: 8px 16px; border-radius: 999px;
+  padding: 8px 16px; border-radius: 8px;
   margin: 4px 0 28px;
 }
 .hero-eyebrow .dot {
   width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
   display: inline-block;
-  animation: ping 2.2s ease-out infinite;
-}
-@keyframes ping {
-  0% { box-shadow: 0 0 0 0 rgba(30,80,255,0.55); }
-  70% { box-shadow: 0 0 0 8px rgba(30,80,255,0); }
-  100% { box-shadow: 0 0 0 0 rgba(30,80,255,0); }
 }
 
 .hero-title {
@@ -128,12 +122,11 @@ header[data-testid="stHeader"] { display: none; }
 .hero-cta-row a { display: inline-block; }
 .hero-cta-row .btn-primary {
   background: var(--accent); color: #fff !important;
-  padding: 13px 26px; border-radius: 999px;
-  font-weight: 800; font-size: 14.5px;
-  box-shadow: 0 6px 20px rgba(30,80,255,0.35);
-  transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
+  padding: 12px 24px; border-radius: 10px;
+  font-weight: 700; font-size: 14.5px;
+  transition: background .15s ease;
 }
-.hero-cta-row .btn-primary:hover { transform: translateY(-2px); background: var(--accent-hover); box-shadow: 0 10px 28px rgba(30,80,255,0.45); }
+.hero-cta-row .btn-primary:hover { background: var(--accent-hover); }
 
 /* ---------- Faixa de transportadoras (rodapé) ---------- */
 .partners {
@@ -158,19 +151,16 @@ div[data-testid="stLinkButton"] > a {
   background: var(--accent) !important;
   color: #fff !important;
   border: none !important;
-  border-radius: 999px !important;
-  font-weight: 800 !important;
-  padding: 10px 24px !important;
-  box-shadow: 0 6px 20px rgba(30,80,255,0.30);
-  transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  padding: 10px 22px !important;
+  transition: background .15s ease;
 }
 div[data-testid="stButton"] > button:hover,
 div[data-testid="stDownloadButton"] > button:hover,
 div[data-testid="stLinkButton"] > a:hover {
   background: var(--accent-hover) !important;
   color: #fff !important;
-  transform: translateY(-1px);
-  box-shadow: 0 10px 28px rgba(30,80,255,0.40);
 }
 
 div[data-testid="stTextInput"] input,
@@ -178,11 +168,10 @@ div[data-baseweb="select"] > div {
   background: var(--bg-soft) !important;
   border: 1px solid var(--line) !important;
   color: var(--ink) !important;
-  border-radius: 10px !important;
+  border-radius: 8px !important;
 }
 div[data-testid="stTextInput"] input:focus {
   border-color: var(--accent) !important;
-  box-shadow: 0 0 0 3px rgba(30,80,255,0.20) !important;
 }
 
 div[data-testid="stFileUploaderDropzone"] {
