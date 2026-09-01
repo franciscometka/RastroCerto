@@ -1,10 +1,12 @@
 """
-CSS + marcação customizada do app, seguindo o design aprovado (fundo
-escuro, amarelo de destaque, fonte Manrope/IBM Plex Mono, barra fixa de
-verdade no topo - por cima da barra padrão do Streamlit, que fica
-escondida - e faixa de transportadoras no rodapé) - mantendo o nome e a
-logo atuais (Sebem/robozinho) em vez da marca "Rastro" do mockup
-original.
+CSS + marcação customizada do app: fundo escuro com o azul da marca (a
+mesma cor da logo) como destaque, fonte Manrope/IBM Plex Mono, barra fixa
+no topo (por cima da barra padrão do Streamlit, que fica escondida), hero
+com brilho azul suave e faixa de transportadoras no rodapé.
+
+A paleta vem toda de config.TEMA (o :root do CSS é montado a partir dela),
+então pra trocar as cores mexe lá, não aqui - só os valores rgba() dos
+brilhos/sombras é que estão escritos direto no CSS.
 
 Os seletores de botão/input usam atributos data-testid (stButton,
 stDownloadButton, etc) em vez de classes CSS geradas, porque essas classes
@@ -72,11 +74,11 @@ header[data-testid="stHeader"] { display: none; }
 .topnav a { font-size: 14px; font-weight: 500; color: var(--ink-dim); }
 .topnav a:hover { color: var(--ink); }
 .topnav .nav-cta {
-  background: var(--ink); color: var(--bg);
+  background: var(--accent); color: #fff !important;
   padding: 9px 18px; border-radius: 999px;
   font-weight: 700; font-size: 13.5px;
 }
-.topnav .nav-cta:hover { background: var(--accent); color: var(--bg); }
+.topnav .nav-cta:hover { background: var(--accent-hover); color: #fff !important; }
 
 @media (max-width: 700px) {
   .topnav a:not(.nav-cta) { display: none; }
@@ -87,6 +89,7 @@ header[data-testid="stHeader"] { display: none; }
   display: flex; flex-direction: column; align-items: center;
   text-align: center;
   padding: 40px 8px 20px;
+  background: radial-gradient(620px 340px at 50% 6%, rgba(30,80,255,0.16), transparent 70%);
 }
 
 .hero-eyebrow {
@@ -104,9 +107,9 @@ header[data-testid="stHeader"] { display: none; }
   animation: ping 2.2s ease-out infinite;
 }
 @keyframes ping {
-  0% { box-shadow: 0 0 0 0 rgba(244,190,65,0.5); }
-  70% { box-shadow: 0 0 0 8px rgba(244,190,65,0); }
-  100% { box-shadow: 0 0 0 0 rgba(244,190,65,0); }
+  0% { box-shadow: 0 0 0 0 rgba(30,80,255,0.55); }
+  70% { box-shadow: 0 0 0 8px rgba(30,80,255,0); }
+  100% { box-shadow: 0 0 0 0 rgba(30,80,255,0); }
 }
 
 .hero-title {
@@ -114,7 +117,7 @@ header[data-testid="stHeader"] { display: none; }
   font-weight: 800; line-height: 1.06; letter-spacing: -0.02em;
   color: var(--ink); margin: 0; max-width: 680px;
 }
-.hero-title .accent { color: var(--accent); }
+.hero-title .accent { color: var(--accent-soft); }
 
 .hero-sub {
   margin: 18px auto 0; max-width: 520px;
@@ -123,13 +126,14 @@ header[data-testid="stHeader"] { display: none; }
 
 .hero-cta-row { margin-top: 32px; display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
 .hero-cta-row a { display: inline-block; }
-.btn-primary {
-  background: var(--ink); color: var(--bg);
+.hero-cta-row .btn-primary {
+  background: var(--accent); color: #fff !important;
   padding: 13px 26px; border-radius: 999px;
   font-weight: 800; font-size: 14.5px;
-  transition: transform .18s ease, background .18s ease;
+  box-shadow: 0 6px 20px rgba(30,80,255,0.35);
+  transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
 }
-.btn-primary:hover { transform: translateY(-2px); background: var(--accent); color: var(--bg); }
+.hero-cta-row .btn-primary:hover { transform: translateY(-2px); background: var(--accent-hover); box-shadow: 0 10px 28px rgba(30,80,255,0.45); }
 
 /* ---------- Faixa de transportadoras (rodapé) ---------- */
 .partners {
@@ -144,27 +148,29 @@ header[data-testid="stHeader"] { display: none; }
 }
 .partners .row {
   display: flex; gap: 32px; flex-wrap: wrap; justify-content: center;
-  font-weight: 700; font-size: 14px; color: rgba(245,242,232,0.55);
+  font-weight: 700; font-size: 14px; color: rgba(237,241,250,0.5);
 }
 
 /* ---------- Componentes Streamlit ---------- */
 div[data-testid="stButton"] > button,
 div[data-testid="stDownloadButton"] > button,
 div[data-testid="stLinkButton"] > a {
-  background: var(--ink) !important;
-  color: var(--bg) !important;
+  background: var(--accent) !important;
+  color: #fff !important;
   border: none !important;
   border-radius: 999px !important;
   font-weight: 800 !important;
   padding: 10px 24px !important;
-  transition: transform .15s ease, background .15s ease;
+  box-shadow: 0 6px 20px rgba(30,80,255,0.30);
+  transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
 }
 div[data-testid="stButton"] > button:hover,
 div[data-testid="stDownloadButton"] > button:hover,
 div[data-testid="stLinkButton"] > a:hover {
-  background: var(--accent) !important;
-  color: var(--bg) !important;
+  background: var(--accent-hover) !important;
+  color: #fff !important;
   transform: translateY(-1px);
+  box-shadow: 0 10px 28px rgba(30,80,255,0.40);
 }
 
 div[data-testid="stTextInput"] input,
@@ -173,6 +179,10 @@ div[data-baseweb="select"] > div {
   border: 1px solid var(--line) !important;
   color: var(--ink) !important;
   border-radius: 10px !important;
+}
+div[data-testid="stTextInput"] input:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(30,80,255,0.20) !important;
 }
 
 div[data-testid="stFileUploaderDropzone"] {

@@ -34,16 +34,21 @@ NOMES_TRANSPORTADORA = {
 }
 
 # ---------------------------------------------------------------------------
-# Tema da UI (fundo escuro + amarelo). Fonte única da paleta do app - o
-# estilo.py monta o bloco :root do CSS a partir daqui.
+# Tema da UI (fundo escuro + azul da marca). Fonte única da paleta do app - o
+# estilo.py monta o bloco :root do CSS a partir daqui. A cor de destaque é o
+# azul da logo (~#0838F8), ajustado pra ficar legível em tela escura; os
+# neutros são levemente frios (azulados) pra casar com o azul em vez do creme
+# quente que vinha do mockup antigo.
 # ---------------------------------------------------------------------------
 TEMA = {
-    "bg": "#050505",
-    "bg-soft": "#121212",
+    "bg": "#05070D",
+    "bg-soft": "#0F1320",
     "line": "rgba(255,255,255,0.09)",
-    "ink": "#F5F2E8",
-    "ink-dim": "#9A968A",
-    "accent": "#F4BE41",
+    "ink": "#EDF1FA",
+    "ink-dim": "#8B93A7",
+    "accent": "#1E50FF",         # azul da marca (fills, botões, dot)
+    "accent-hover": "#3A66FF",   # hover dos botões
+    "accent-soft": "#5B8CFF",    # azul mais claro pra texto/realce sobre fundo escuro
 }
 
 # ---------------------------------------------------------------------------
