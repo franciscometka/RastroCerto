@@ -141,7 +141,7 @@ if pdf is not None:
             else:
                 with st.spinner("Consultando..."):
                     resultado = consultar_rodonaves(cnpj_cpf, numero_nf, username, password)
-                mostrar_resultado_rodonaves(st, resultado)
+                mostrar_resultado_rodonaves(st, resultado, numero_nf)
 
     else:
         portal = get_portal(transportadora_id)

@@ -6,7 +6,7 @@ Separa a apresentação (o que aparece pro usuário) da lógica de consulta
 função certa daqui.
 """
 
-from imagem_rastreio import gerar_imagem_historico
+from imagem_rastreio import gerar_imagem_historico, gerar_imagem_rodonaves
 
 
 def mostrar_resultado_atual_cargas(st, resultado: dict, numero_nf: str) -> None:
@@ -62,32 +62,34 @@ def mostrar_resultado_atual_cargas(st, resultado: dict, numero_nf: str) -> None:
         st.code(resultado["html_bruto"], language="html")
 
 
-def mostrar_resultado_rodonaves(st, resultado: dict) -> None:
+def mostrar_resultado_rodonaves(st, resultado: dict, numero_nf: str) -> None:
     """Exibe o resultado da consulta automática à Rodonaves (API oficial).
 
     Ordem de prioridade:
     1. Falha de rede/HTTP/credencial -> erro
-    2. Eventos -> tabela + info de destinatário/protocolo/previsão de entrega
+    2. Eventos -> imagem PNG + botão de download (mesmo padrão da Atual Cargas)
     3. Mensagem sem eventos (nota sem histórico ainda) -> aviso
     """
     if not resultado["sucesso"]:
         st.error(f"Erro na consulta: {resultado['erro']}")
         return
 
-    info = resultado.get("info", {})
-    if info.get("destinatario") or info.get("protocolo"):
-        partes = []
-        if info.get("destinatario"):
-            partes.append(f"**Destinatário:** {info['destinatario']}")
-        if info.get("protocolo"):
-            partes.append(f"**Protocolo:** {info['protocolo']}")
-        if info.get("previsao_dias") is not None:
-            partes.append(f"**Previsão de entrega:** {info['previsao_dias']} dias após a emissão")
-        st.markdown(" &nbsp;·&nbsp; ".join(partes))
-
     if resultado["eventos"]:
         st.success("Rastreamento encontrado:")
-        st.table(resultado["eventos"])
+        info = resultado.get("info", {})
+        imagem_png = gerar_imagem_rodonaves(
+            resultado["eventos"],
+            destinatario=info.get("destinatario", ""),
+            protocolo=info.get("protocolo", ""),
+            previsao_dias=info.get("previsao_dias"),
+        )
+        st.image(imagem_png)
+        st.download_button(
+            "📥 Baixar imagem do rastreio",
+            data=imagem_png,
+            file_name=f"rastreio_{numero_nf}.png",
+            mime="image/png",
+        )
         return
 
     if resultado.get("mensagem"):

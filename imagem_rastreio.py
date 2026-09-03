@@ -1,8 +1,10 @@
 """
-Gera uma imagem PNG do histórico de rastreio, no estilo visual do
-"Rastreamento detalhado" que aparece no site da Atual Cargas (fundo
-branco, cabeçalho cinza, situação em vermelho negrito, linhas
-alternadas) - pra dar pra baixar e mandar pro cliente.
+Gera imagens PNG do histórico de rastreio, no mesmo estilo visual (fundo
+branco, cabeçalho cinza, linhas alternadas) pra dar pra baixar e mandar
+pro cliente - uma versão pra Atual Cargas (`gerar_imagem_historico`,
+imita o "Rastreamento detalhado" do site deles, com coluna de Unidade) e
+uma pra Rodonaves (`gerar_imagem_rodonaves`, 2 colunas só, já que os
+eventos da API vêm como frase única em vez de título+unidade separados).
 
 Usa Pillow puro (sem depender de navegador/wkhtmltoimage) e as fontes
 DejaVu Sans empacotadas em assets/, pra ficar consistente tanto local
@@ -145,6 +147,96 @@ def gerar_imagem_historico(
         for linha in linhas_detalhe:
             draw.text((x2 + PAD_COL, y_texto), linha, font=fonte_normal, fill=COR_CINZA_TEXTO)
             y_texto += 16
+
+        y += altura_linha
+
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+def gerar_imagem_rodonaves(
+    eventos: list[dict],
+    destinatario: str = "",
+    protocolo: str = "",
+    previsao_dias: int | None = None,
+) -> bytes:
+    """Gera a imagem PNG do histórico de rastreio da Rodonaves.
+
+    Layout de 2 colunas (Data/Hora | Situação), diferente da Atual Cargas
+    (3 colunas) porque a API da Rodonaves devolve cada evento como uma
+    frase única (`Description`), sem título curto e unidade separados -
+    não dá pra fingir a mesma estrutura sem inventar dado. O evento mais
+    recente (último da lista, que é a ordem que a API devolve) fica em
+    negrito/vermelho pra destacar o status atual; os anteriores ficam em
+    cinza normal.
+    """
+    fonte_normal = _fonte(13)
+    fonte_negrito = _fonte(13, negrito=True)
+    fonte_titulo = _fonte(19, negrito=True)
+    fonte_marca = _fonte(21, negrito=True)
+
+    dummy = ImageDraw.Draw(Image.new("RGB", (10, 10)))
+    col_data = 110
+    col_situacao = LARGURA - 2 * MARGEM - col_data
+    largura_situacao_texto = col_situacao - 2 * PAD_COL
+
+    ultimo_indice = len(eventos) - 1
+    linhas_tabela = []
+    for i, evento in enumerate(eventos):
+        fonte_linha = fonte_negrito if i == ultimo_indice else fonte_normal
+        linhas_situacao = _quebrar_texto(dummy, evento.get("Situação", ""), fonte_linha, largura_situacao_texto)
+        altura = 24 + len(linhas_situacao) * 17
+        linhas_tabela.append((evento, linhas_situacao, max(altura, 44)))
+
+    altura_topo = 128
+    altura_cabecalho_tabela = 34
+    altura_total = altura_topo + altura_cabecalho_tabela + sum(l[2] for l in linhas_tabela) + MARGEM
+
+    img = Image.new("RGB", (LARGURA, altura_total), "white")
+    draw = ImageDraw.Draw(img)
+
+    y = MARGEM
+    draw.text((LARGURA / 2, y), "RODONAVES", font=fonte_marca, fill=COR_AZUL, anchor="ma")
+    y += 36
+
+    draw.text((MARGEM, y), "Rastreamento detalhado", font=fonte_titulo, fill=COR_VERMELHO)
+    y += 30
+
+    if destinatario:
+        draw.text((MARGEM, y), f"Destinatário: {destinatario}", font=fonte_normal, fill=COR_AZUL)
+    if previsao_dias is not None:
+        texto_previsao = f"Previsão de entrega: {previsao_dias} dias após a emissão"
+        largura_previsao = draw.textlength(texto_previsao, font=fonte_negrito)
+        draw.text((LARGURA - MARGEM - largura_previsao, y), texto_previsao, font=fonte_negrito, fill=COR_AZUL)
+    y += 22
+
+    if protocolo:
+        draw.text((MARGEM, y), f"Protocolo: {protocolo}", font=fonte_normal, fill=COR_AZUL)
+    y += 28
+
+    x0 = MARGEM
+    x1 = MARGEM + col_data
+    x2 = LARGURA - MARGEM
+
+    draw.rectangle([x0, y, x2, y + altura_cabecalho_tabela], fill=COR_CINZA_HEADER)
+    draw.text((x0 + PAD_COL, y + 9), "Data/Hora", font=fonte_negrito, fill="white")
+    draw.text((x1 + PAD_COL, y + 9), "Situação", font=fonte_negrito, fill="white")
+    y += altura_cabecalho_tabela
+
+    for i, (evento, linhas_situacao, altura_linha) in enumerate(linhas_tabela):
+        cor_fundo = COR_LINHA_PAR if i % 2 == 0 else COR_LINHA_IMPAR
+        draw.rectangle([x0, y, x2, y + altura_linha], fill=cor_fundo, outline=COR_BORDA)
+
+        draw.text((x0 + PAD_COL, y + 12), evento.get("Data/Hora", ""), font=fonte_normal, fill=COR_CINZA_TEXTO)
+
+        destaque = i == ultimo_indice
+        fonte_texto = fonte_negrito if destaque else fonte_normal
+        cor_texto = COR_VERMELHO if destaque else COR_CINZA_TEXTO
+        y_texto = y + 12
+        for linha in linhas_situacao:
+            draw.text((x1 + PAD_COL, y_texto), linha, font=fonte_texto, fill=cor_texto)
+            y_texto += 17
 
         y += altura_linha
 
