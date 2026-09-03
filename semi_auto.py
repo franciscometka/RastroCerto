@@ -1,26 +1,17 @@
 """
-Rodonaves e Expresso São Miguel têm captcha/reCAPTCHA nos formulários de
-rastreio, então não são automatizadas de ponta a ponta - isso seria bypass
-de proteção anti-bot. (Atual Cargas não entra aqui: é consultada
-automaticamente via ssw_client.py.)
+Expresso São Miguel tem captcha/reCAPTCHA no formulário de rastreio, então
+não é automatizada de ponta a ponta - isso seria bypass de proteção
+anti-bot. (Atual Cargas e Rodonaves não entram aqui: são consultadas
+automaticamente via ssw_client.py e rodonaves_client.py.)
 
-O que este módulo faz: guarda o link direto do portal de cada uma, pra a
-tela mostrar os dados já extraídos (CNPJ/CPF + número da NF) prontos pra
-copiar, com um botão que abre o portal certo em outra aba. Usuário só cola
-os dados, resolve o captcha e clica em rastrear - 1 clique manual em vez de
-digitar tudo do zero.
+O que este módulo faz: guarda o link direto do portal, pra a tela mostrar
+os dados já extraídos (CNPJ/CPF + número da NF) prontos pra copiar, com um
+botão que abre o portal em outra aba. Usuário só cola os dados, resolve o
+captcha e clica em rastrear - 1 clique manual em vez de digitar tudo do
+zero.
 """
 
 PORTAIS = {
-    "rodonaves": {
-        "nome": "Rodonaves",
-        "url": "https://cliente.rte.com.br/Tracking/",
-        "instrucoes": (
-            "No portal, troque 'Consultar por' para 'Nota Fiscal', cole o "
-            "CPF/CNPJ e o número da NF-e nos campos, resolva o reCAPTCHA e "
-            "clique em Rastrear."
-        ),
-    },
     "expresso_sao_miguel": {
         "nome": "Expresso São Miguel",
         "url": "https://portaldocliente.expressosaomiguel.com.br/rastrear-mercadoria",

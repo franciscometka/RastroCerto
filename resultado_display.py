@@ -62,6 +62,41 @@ def mostrar_resultado_atual_cargas(st, resultado: dict, numero_nf: str) -> None:
         st.code(resultado["html_bruto"], language="html")
 
 
+def mostrar_resultado_rodonaves(st, resultado: dict) -> None:
+    """Exibe o resultado da consulta automática à Rodonaves (API oficial).
+
+    Ordem de prioridade:
+    1. Falha de rede/HTTP/credencial -> erro
+    2. Eventos -> tabela + info de destinatário/protocolo/previsão de entrega
+    3. Mensagem sem eventos (nota sem histórico ainda) -> aviso
+    """
+    if not resultado["sucesso"]:
+        st.error(f"Erro na consulta: {resultado['erro']}")
+        return
+
+    info = resultado.get("info", {})
+    if info.get("destinatario") or info.get("protocolo"):
+        partes = []
+        if info.get("destinatario"):
+            partes.append(f"**Destinatário:** {info['destinatario']}")
+        if info.get("protocolo"):
+            partes.append(f"**Protocolo:** {info['protocolo']}")
+        if info.get("previsao_dias") is not None:
+            partes.append(f"**Previsão de entrega:** {info['previsao_dias']} dias após a emissão")
+        st.markdown(" &nbsp;·&nbsp; ".join(partes))
+
+    if resultado["eventos"]:
+        st.success("Rastreamento encontrado:")
+        st.table(resultado["eventos"])
+        return
+
+    if resultado.get("mensagem"):
+        st.warning(resultado["mensagem"])
+        return
+
+    st.warning("Não consegui achar informações de rastreio pra essa nota.")
+
+
 def mostrar_portal_manual(st, portal: dict, cnpj_cpf: str, numero_nf: str) -> None:
     """Exibe o modo semi-automático (transportadoras com captcha): mostra os
     dados prontos pra copiar e um botão que abre o portal certo."""

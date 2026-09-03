@@ -1,3 +1,4 @@
+import os
 import tempfile
 
 import streamlit as st
@@ -5,10 +6,28 @@ import streamlit as st
 from config import LOGO_PATH, NOMES_TRANSPORTADORA, PAGE_TITLE
 from estilo import aplicar_estilo, hero, hero_cta, partners_strip, topbar
 from extractor import processar_pdf
-from resultado_display import mostrar_portal_manual, mostrar_resultado_atual_cargas
+from resultado_display import (
+    mostrar_portal_manual,
+    mostrar_resultado_atual_cargas,
+    mostrar_resultado_rodonaves,
+)
+from rodonaves_client import consultar_rodonaves
 from semi_auto import get_portal
 from ssw_client import consultar_atual_cargas
 from validators import documento_valido, numero_nf_valido
+
+
+def _credencial_rodonaves(chave: str) -> str:
+    """Lê a credencial da Rodonaves de st.secrets (local: .streamlit/secrets.toml;
+    produção: Secrets do Streamlit Cloud), com fallback pra variável de
+    ambiente - assim o mesmo código funciona rodando fora do Streamlit
+    também (ex: script de teste)."""
+    try:
+        if chave in st.secrets:
+            return st.secrets[chave]
+    except Exception:
+        pass
+    return os.environ.get(chave, "")
 
 st.set_page_config(page_title=PAGE_TITLE, page_icon=LOGO_PATH, layout="centered")
 aplicar_estilo(st)
@@ -94,6 +113,36 @@ if pdf is not None:
                 with st.spinner("Consultando..."):
                     resultado = consultar_atual_cargas(cnpj_cpf, [numero_nf])
                 mostrar_resultado_atual_cargas(st, resultado, numero_nf)
+
+    elif transportadora_id == "rodonaves":
+        username = _credencial_rodonaves("RODONAVES_API_USERNAME")
+        password = _credencial_rodonaves("RODONAVES_API_PASSWORD")
+
+        if not username or not password:
+            st.warning(
+                "Credenciais da API da Rodonaves não configuradas - caindo pro modo manual."
+            )
+            mostrar_portal_manual(
+                st,
+                {
+                    "nome": "Rodonaves",
+                    "url": "https://cliente.rte.com.br/Tracking/",
+                    "instrucoes": (
+                        "No portal, troque 'Consultar por' para 'Nota Fiscal', cole o "
+                        "CPF/CNPJ e o número da NF-e nos campos e clique em Rastrear."
+                    ),
+                },
+                cnpj_cpf,
+                numero_nf,
+            )
+        elif st.button("🔎 Rastrear na Rodonaves", type="primary"):
+            if not cnpj_cpf or not numero_nf:
+                st.error("Preenche CPF/CNPJ e número da NF antes de rastrear.")
+            else:
+                with st.spinner("Consultando..."):
+                    resultado = consultar_rodonaves(cnpj_cpf, numero_nf, username, password)
+                mostrar_resultado_rodonaves(st, resultado)
+
     else:
         portal = get_portal(transportadora_id)
         mostrar_portal_manual(st, portal, cnpj_cpf, numero_nf)

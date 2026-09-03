@@ -4,14 +4,19 @@ App em Streamlit: sobe o PDF da nota fiscal, extrai CNPJ/CPF do destinatário
 e número da NF, detecta a transportadora e rastreia.
 
 - **Atual Cargas**: automático de ponta a ponta (sem captcha no site deles).
-- **Rodonaves** e **Expresso São Miguel**: têm captcha/reCAPTCHA, então o app
-  só prepara os dados e abre o portal certo - falta 1 clique manual (resolver
-  o captcha e apertar rastrear).
+- **Rodonaves**: automático via API oficial (`dev.rodonaves.com.br`) - precisa
+  configurar `RODONAVES_API_USERNAME`/`RODONAVES_API_PASSWORD` (ver
+  `.streamlit/secrets.toml.example`). Sem credencial, o app cai
+  automaticamente pro modo manual.
+- **Expresso São Miguel**: tem captcha, então o app só prepara os dados e
+  abre o portal certo - falta 1 clique manual (resolver o captcha e apertar
+  rastrear).
 
 ## Rodar localmente
 
 ```bash
 pip install -r requirements.txt
+cp .streamlit/secrets.toml.example .streamlit/secrets.toml   # preenche com a credencial da Rodonaves quando tiver
 streamlit run app.py
 ```
 
@@ -22,12 +27,14 @@ streamlit run app.py
 - `extractor.py` — extração de dados do PDF (CNPJ/CPF, número da NF, transportadora)
 - `validators.py` — validação de CPF/CNPJ (dígito verificador) e número da NF, pra avisar antes de rastrear se a extração pegou algo inválido
 - `ssw_client.py` — automação da Atual Cargas (scraping do formulário SSW, sem captcha)
-- `semi_auto.py` — links/instruções das transportadoras com captcha (Rodonaves, Expresso São Miguel)
+- `rodonaves_client.py` — cliente da API oficial da Rodonaves (autenticação + rastreio)
+- `semi_auto.py` — links/instruções da transportadora com captcha (Expresso São Miguel)
 - `resultado_display.py` — formatação dos resultados na tela
-- `imagem_rastreio.py` — gera a imagem PNG baixável do histórico, no estilo do site da Atual Cargas
-- `estilo.py` — CSS/tema do app (fundo escuro + amarelo), monta o `:root` a partir de `config.TEMA`
-- `http_utils.py` — sessão HTTP com retry automático, usada pelo `ssw_client`
+- `imagem_rastreio.py` — gera a imagem PNG baixável do histórico da Atual Cargas, no estilo do site deles
+- `estilo.py` — CSS/tema do app (fundo escuro + azul da marca), monta o `:root` a partir de `config.TEMA`
+- `http_utils.py` — sessão HTTP com retry automático, usada pelos dois clientes
 - `assets/` — logo (favicon + cabeçalho) e fontes DejaVu Sans (usadas na imagem PNG)
+- `.streamlit/secrets.toml` — credenciais (nunca commitado; veja o `.example`)
 
 ## Pegadinha resolvida: URL certa da Atual Cargas no ssw.inf.br
 
@@ -62,13 +69,35 @@ parece ter alguma proteção anti-bot própria, e não vale a pena tentar
 contornar. Ficamos com o `ssw.inf.br` mesmo, que funciona bem com a URL
 certa.
 
+## Rodonaves - API oficial
+
+Documentação pública em https://dev.rodonaves.com.br/reference/rastreio-1
+(não precisa estar logado pra ver). Fluxo:
+
+1. `POST https://tracking-apigateway.rte.com.br/token` com
+   `auth_type=DEV`, `grant_type=password`, `username`, `password` (form-data)
+   → devolve um `access_token` (JWT).
+2. `GET https://tracking-apigateway.rte.com.br/api/v1/tracking` com
+   `TaxIdRegistration` (CPF/CNPJ) e `InvoiceNumber` (número da NF) como
+   query params, `Authorization: Bearer <token>` no header.
+
+Pegadinhas descobertas testando com notas reais:
+- Credencial errada devolve **400**, não 401.
+- Nota/CPF sem correspondência devolve **204 sem corpo** (não 404) - o
+  cliente trata os dois como "nada encontrado".
+
+O token não é cacheado entre consultas (autentica de novo a cada clique) -
+simples e sem custo perceptível pro padrão de uso do app.
+
 ## Próximos passos / pontos de atenção
 
-1. **Extração do PDF (`extractor.py`) é heurística**, mas já validada com 10
-   DANFEs reais da Sebem (CNPJ/CPF, número da NF e detecção de
-   transportadora bateram certo em todos). Se aparecer um layout diferente
-   e a extração errar, me manda o PDF (pode tampar dados sensíveis que não
-   importem pro teste) e eu ajusto os padrões de busca.
+1. **Extração do PDF (`extractor.py`) é heurística**, mas já validada com
+   DANFEs reais da Sebem de várias transportadoras (CNPJ/CPF, número da NF
+   e detecção de transportadora bateram certo). Se aparecer um layout
+   diferente e a extração errar, me manda o PDF (pode tampar dados
+   sensíveis que não importem pro teste) e eu ajusto os padrões de busca.
 
 2. **Deploy**: mesmo fluxo do Trayo - sobe num repositório no GitHub e
-   conecta no Streamlit Cloud.
+   conecta no Streamlit Cloud. Lembrar de configurar
+   `RODONAVES_API_USERNAME`/`RODONAVES_API_PASSWORD` nos Secrets do app no
+   Streamlit Cloud (mesmo formato do `secrets.toml` local).

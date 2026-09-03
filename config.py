@@ -73,6 +73,18 @@ SSW_BASE = "https://ssw.inf.br"
 SSW_URL = f"{SSW_BASE}/2/resultSSW_dest_nro"
 
 # ---------------------------------------------------------------------------
+# Rodonaves - API oficial (portal dev.rodonaves.com.br, docs públicas em
+# https://dev.rodonaves.com.br/reference/rastreio-1). Autenticação é OAuth
+# password grant (auth_type=DEV fixo, confirmado na documentação); token
+# expira e precisa ser pedido de novo a cada consulta (não há endpoint de
+# refresh documentado, e o token dura ~8h, mais que suficiente pro padrão
+# de uso do app - uma consulta por vez).
+# ---------------------------------------------------------------------------
+RODONAVES_TOKEN_URL = "https://tracking-apigateway.rte.com.br/token"
+RODONAVES_TRACKING_URL = "https://tracking-apigateway.rte.com.br/api/v1/tracking"
+RODONAVES_AUTH_TYPE = "DEV"
+
+# ---------------------------------------------------------------------------
 # Rede (usado pelo http_utils)
 # ---------------------------------------------------------------------------
 USER_AGENT = "Mozilla/5.0 (compatible; Sebem-Rastreio/1.0)"
