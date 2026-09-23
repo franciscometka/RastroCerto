@@ -85,6 +85,20 @@ RODONAVES_TRACKING_URL = "https://tracking-apigateway.rte.com.br/api/v1/tracking
 RODONAVES_AUTH_TYPE = "DEV"
 
 # ---------------------------------------------------------------------------
+# Expresso São Miguel - API oficial (documentação recebida por e-mail:
+# "Manual Técnico - Integração Clientes", 2026). Autenticação é só nos
+# headers da própria consulta (Access_Key + Customer) - sem endpoint de
+# token separado como a Rodonaves.
+#
+# A Sebem tem 3 CNPJs diferentes que despacham por essa transportadora,
+# cada um com seu próprio par Customer/Access_Key. Como o extractor.py só
+# pega o CNPJ do destinatário (não o do remetente que emitiu a nota), o
+# sao_miguel_client tenta os 3 pares em sequência até um funcionar.
+# ---------------------------------------------------------------------------
+SAO_MIGUEL_TRACKING_URL = "https://wsintegcli02.expressosaomiguel.com.br:40504/wsservernet/api/tracking"
+SAO_MIGUEL_MODELO_CONSULTA = "TRACKING_COMPLETO_POR_NOTA_FISCAL_E_COMPROVANTE"
+
+# ---------------------------------------------------------------------------
 # Rede (usado pelo http_utils)
 # ---------------------------------------------------------------------------
 USER_AGENT = "Mozilla/5.0 (compatible; Sebem-Rastreio/1.0)"

@@ -8,15 +8,17 @@ e número da NF, detecta a transportadora e rastreia.
   configurar `RODONAVES_API_USERNAME`/`RODONAVES_API_PASSWORD` (ver
   `.streamlit/secrets.toml.example`). Sem credencial, o app cai
   automaticamente pro modo manual.
-- **Expresso São Miguel**: tem captcha, então o app só prepara os dados e
-  abre o portal certo - falta 1 clique manual (resolver o captcha e apertar
-  rastrear).
+- **Expresso São Miguel**: automático via API oficial (`wsintegcli02.expressosaomiguel.com.br`)
+  - precisa configurar até 3 pares `SAO_MIGUEL_CUSTOMER_N`/`SAO_MIGUEL_ACCESS_KEY_N`
+  (um por CNPJ do grupo Sebem que despacha por essa transportadora; ver
+  `.streamlit/secrets.toml.example`). Sem nenhum configurado, o app cai
+  automaticamente pro modo manual.
 
 ## Rodar localmente
 
 ```bash
 pip install -r requirements.txt
-cp .streamlit/secrets.toml.example .streamlit/secrets.toml   # preenche com a credencial da Rodonaves quando tiver
+cp .streamlit/secrets.toml.example .streamlit/secrets.toml   # preenche com as credenciais quando tiver
 streamlit run app.py
 ```
 
@@ -28,11 +30,12 @@ streamlit run app.py
 - `validators.py` — validação de CPF/CNPJ (dígito verificador) e número da NF, pra avisar antes de rastrear se a extração pegou algo inválido
 - `ssw_client.py` — automação da Atual Cargas (scraping do formulário SSW, sem captcha)
 - `rodonaves_client.py` — cliente da API oficial da Rodonaves (autenticação + rastreio)
-- `semi_auto.py` — links/instruções da transportadora com captcha (Expresso São Miguel)
+- `sao_miguel_client.py` — cliente da API oficial da Expresso São Miguel (rastreio; tenta até 3 pares de credencial)
+- `semi_auto.py` — fallback de portal manual (fica vazio hoje - as 3 transportadoras são automáticas; usado se faltar credencial)
 - `resultado_display.py` — formatação dos resultados na tela
-- `imagem_rastreio.py` — gera a imagem PNG baixável do histórico da Atual Cargas, no estilo do site deles
+- `imagem_rastreio.py` — gera a imagem PNG baixável do histórico de cada transportadora
 - `estilo.py` — CSS/tema do app (fundo escuro + azul da marca), monta o `:root` a partir de `config.TEMA`
-- `http_utils.py` — sessão HTTP com retry automático, usada pelos dois clientes
+- `http_utils.py` — sessão HTTP com retry automático, usada pelos três clientes
 - `assets/` — logo (favicon + cabeçalho) e fontes DejaVu Sans (usadas na imagem PNG)
 - `.streamlit/secrets.toml` — credenciais (nunca commitado; veja o `.example`)
 
@@ -88,6 +91,38 @@ Pegadinhas descobertas testando com notas reais:
 
 O token não é cacheado entre consultas (autentica de novo a cada clique) -
 simples e sem custo perceptível pro padrão de uso do app.
+
+## Expresso São Miguel - API oficial
+
+Documentação recebida por e-mail ("Manual Técnico - Integração Clientes",
+2026) - sem portal público, então se o formato mudar não tem onde
+conferir, só pedir a documentação atualizada de novo. Fluxo:
+
+`POST https://wsintegcli02.expressosaomiguel.com.br:40504/wsservernet/api/tracking`
+com headers `Access_Key`, `Customer` (CNPJ dono da chave) e
+`Modelo_Consulta: TRACKING_COMPLETO_POR_NOTA_FISCAL_E_COMPROVANTE`, corpo
+`{"valoresParametros": [cpfOuCnpjDestinatario, numeroNF, serieOuNull]}`.
+Sem endpoint de token separado - a autenticação é só nesses headers.
+
+A Sebem despacha por essa transportadora com 3 CNPJs diferentes, cada um
+com seu próprio par Customer/Access_Key - como o `extractor.py` só extrai
+o CNPJ do destinatário (não o do remetente que emitiu a nota), o cliente
+tenta os 3 pares em sequência até um funcionar.
+
+Pegadinhas descobertas testando com notas reais (a doc erra os status):
+- CPF/CNPJ mal formado devolve **400** com corpo JSON
+  `{"message": "Documento inválido: ..."}`, não 401 - a doc chama isso de
+  "chave de acesso inválida", mas na prática é validação do dado enviado.
+  Nesse caso não faz sentido tentar os outros pares de credencial (o erro
+  se repetiria), então o cliente já retorna direto com a mensagem da API.
+- CPF/CNPJ bem formado mas sem correspondência devolve **200 com lista
+  vazia** (`[]`) - esse sim é tratado como "nada encontrado".
+- Credencial de fato inválida (chave errada) também devolve **400**, com
+  mensagem tipo `"Cliente não encontrado! Verifique parametros."` - não dá
+  pra distinguir "documento errado" de "credencial errada" só pelo status
+  HTTP, então o cliente trata os dois igual: devolve a mensagem da própria
+  API sem tentar os outros pares de credencial (não adiantaria, já que o
+  problema geralmente está no dado enviado, não em qual chave foi usada).
 
 ## Próximos passos / pontos de atenção
 

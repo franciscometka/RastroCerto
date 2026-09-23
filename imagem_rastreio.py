@@ -161,15 +161,60 @@ def gerar_imagem_rodonaves(
     protocolo: str = "",
     previsao_dias: int | None = None,
 ) -> bytes:
-    """Gera a imagem PNG do histórico de rastreio da Rodonaves.
+    """Gera a imagem PNG do histórico de rastreio da Rodonaves. Fina camada
+    sobre `gerar_imagem_2_colunas` só pra formatar a previsão em "X dias
+    após a emissão" (formato que a API da Rodonaves devolve) e o rótulo
+    "Protocolo"."""
+    previsao_texto = f"{previsao_dias} dias após a emissão" if previsao_dias is not None else ""
+    linha_info = f"Protocolo: {protocolo}" if protocolo else ""
+    return gerar_imagem_2_colunas(
+        marca="RODONAVES",
+        eventos=eventos,
+        destinatario=destinatario,
+        linha_info=linha_info,
+        previsao_texto=previsao_texto,
+    )
 
-    Layout de 2 colunas (Data/Hora | Situação), diferente da Atual Cargas
-    (3 colunas) porque a API da Rodonaves devolve cada evento como uma
-    frase única (`Description`), sem título curto e unidade separados -
-    não dá pra fingir a mesma estrutura sem inventar dado. O evento mais
-    recente (último da lista, que é a ordem que a API devolve) fica em
-    negrito/vermelho pra destacar o status atual; os anteriores ficam em
-    cinza normal.
+
+def gerar_imagem_sao_miguel(
+    eventos: list[dict],
+    numero_documento: str = "",
+    unidade_destino: str = "",
+    previsao_entrega: str = "",
+) -> bytes:
+    """Gera a imagem PNG do histórico de rastreio da Expresso São Miguel.
+    Fina camada sobre `gerar_imagem_2_colunas` - a API deles não devolve o
+    nome do destinatário (só endereço de entrega), então mostra o número
+    do documento e a unidade de destino em vez disso."""
+    partes = []
+    if numero_documento:
+        partes.append(f"Documento: {numero_documento}")
+    if unidade_destino:
+        partes.append(f"Unidade destino: {unidade_destino}")
+    return gerar_imagem_2_colunas(
+        marca="EXPRESSO SÃO MIGUEL",
+        eventos=eventos,
+        linha_info=" · ".join(partes),
+        previsao_texto=previsao_entrega,
+    )
+
+
+def gerar_imagem_2_colunas(
+    marca: str,
+    eventos: list[dict],
+    destinatario: str = "",
+    linha_info: str = "",
+    previsao_texto: str = "",
+) -> bytes:
+    """Gera uma imagem PNG de histórico de rastreio com layout de 2 colunas
+    (Data/Hora | Situação) - usado por transportadoras cuja API devolve cada
+    evento como uma frase única (`descrição`/`Description`), sem título
+    curto e unidade separados como o HTML do SSW tem (não dá pra fingir a
+    mesma estrutura de 3 colunas da Atual Cargas sem inventar dado).
+
+    O evento mais recente (último da lista, que é a ordem que essas APIs
+    devolvem) fica em negrito/vermelho pra destacar o status atual; os
+    anteriores ficam em cinza normal.
     """
     fonte_normal = _fonte(13)
     fonte_negrito = _fonte(13, negrito=True)
@@ -197,7 +242,7 @@ def gerar_imagem_rodonaves(
     draw = ImageDraw.Draw(img)
 
     y = MARGEM
-    draw.text((LARGURA / 2, y), "RODONAVES", font=fonte_marca, fill=COR_AZUL, anchor="ma")
+    draw.text((LARGURA / 2, y), marca, font=fonte_marca, fill=COR_AZUL, anchor="ma")
     y += 36
 
     draw.text((MARGEM, y), "Rastreamento detalhado", font=fonte_titulo, fill=COR_VERMELHO)
@@ -205,14 +250,14 @@ def gerar_imagem_rodonaves(
 
     if destinatario:
         draw.text((MARGEM, y), f"Destinatário: {destinatario}", font=fonte_normal, fill=COR_AZUL)
-    if previsao_dias is not None:
-        texto_previsao = f"Previsão de entrega: {previsao_dias} dias após a emissão"
+    if previsao_texto:
+        texto_previsao = f"Previsão de entrega: {previsao_texto}"
         largura_previsao = draw.textlength(texto_previsao, font=fonte_negrito)
         draw.text((LARGURA - MARGEM - largura_previsao, y), texto_previsao, font=fonte_negrito, fill=COR_AZUL)
     y += 22
 
-    if protocolo:
-        draw.text((MARGEM, y), f"Protocolo: {protocolo}", font=fonte_normal, fill=COR_AZUL)
+    if linha_info:
+        draw.text((MARGEM, y), linha_info, font=fonte_normal, fill=COR_AZUL)
     y += 28
 
     x0 = MARGEM

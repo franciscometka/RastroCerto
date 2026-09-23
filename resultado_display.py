@@ -6,7 +6,7 @@ Separa a apresentação (o que aparece pro usuário) da lógica de consulta
 função certa daqui.
 """
 
-from imagem_rastreio import gerar_imagem_historico, gerar_imagem_rodonaves
+from imagem_rastreio import gerar_imagem_historico, gerar_imagem_rodonaves, gerar_imagem_sao_miguel
 
 
 def mostrar_resultado_atual_cargas(st, resultado: dict, numero_nf: str) -> None:
@@ -82,6 +82,43 @@ def mostrar_resultado_rodonaves(st, resultado: dict, numero_nf: str) -> None:
             destinatario=info.get("destinatario", ""),
             protocolo=info.get("protocolo", ""),
             previsao_dias=info.get("previsao_dias"),
+        )
+        st.image(imagem_png)
+        st.download_button(
+            "📥 Baixar imagem do rastreio",
+            data=imagem_png,
+            file_name=f"rastreio_{numero_nf}.png",
+            mime="image/png",
+        )
+        return
+
+    if resultado.get("mensagem"):
+        st.warning(resultado["mensagem"])
+        return
+
+    st.warning("Não consegui achar informações de rastreio pra essa nota.")
+
+
+def mostrar_resultado_sao_miguel(st, resultado: dict, numero_nf: str) -> None:
+    """Exibe o resultado da consulta automática à Expresso São Miguel (API oficial).
+
+    Ordem de prioridade:
+    1. Falha de rede/HTTP/credencial -> erro
+    2. Eventos -> imagem PNG + botão de download (mesmo padrão da Atual Cargas/Rodonaves)
+    3. Mensagem sem eventos (nota sem histórico ainda) -> aviso
+    """
+    if not resultado["sucesso"]:
+        st.error(f"Erro na consulta: {resultado['erro']}")
+        return
+
+    if resultado["eventos"]:
+        st.success("Rastreamento encontrado:")
+        info = resultado.get("info", {})
+        imagem_png = gerar_imagem_sao_miguel(
+            resultado["eventos"],
+            numero_documento=info.get("numero_documento", ""),
+            unidade_destino=info.get("unidade_destino", ""),
+            previsao_entrega=info.get("previsao_entrega", ""),
         )
         st.image(imagem_png)
         st.download_button(

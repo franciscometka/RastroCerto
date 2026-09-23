@@ -10,15 +10,17 @@ from resultado_display import (
     mostrar_portal_manual,
     mostrar_resultado_atual_cargas,
     mostrar_resultado_rodonaves,
+    mostrar_resultado_sao_miguel,
 )
 from rodonaves_client import consultar_rodonaves
+from sao_miguel_client import consultar_sao_miguel
 from semi_auto import get_portal
 from ssw_client import consultar_atual_cargas
 from validators import documento_valido, numero_nf_valido
 
 
-def _credencial_rodonaves(chave: str) -> str:
-    """Lê a credencial da Rodonaves de st.secrets (local: .streamlit/secrets.toml;
+def _credencial(chave: str) -> str:
+    """Lê uma credencial de st.secrets (local: .streamlit/secrets.toml;
     produção: Secrets do Streamlit Cloud), com fallback pra variável de
     ambiente - assim o mesmo código funciona rodando fora do Streamlit
     também (ex: script de teste)."""
@@ -28,6 +30,20 @@ def _credencial_rodonaves(chave: str) -> str:
     except Exception:
         pass
     return os.environ.get(chave, "")
+
+
+def _credenciais_sao_miguel() -> list[tuple[str, str]]:
+    """A Sebem tem 3 CNPJs diferentes que despacham pela Expresso São
+    Miguel, cada um com seu par Customer/Access_Key (ver
+    .streamlit/secrets.toml.example) - lê até 3 pares numerados, ignorando
+    os que não estiverem configurados."""
+    pares = []
+    for i in range(1, 4):
+        customer = _credencial(f"SAO_MIGUEL_CUSTOMER_{i}")
+        access_key = _credencial(f"SAO_MIGUEL_ACCESS_KEY_{i}")
+        if customer and access_key:
+            pares.append((customer, access_key))
+    return pares
 
 st.set_page_config(page_title=PAGE_TITLE, page_icon=LOGO_PATH, layout="centered")
 aplicar_estilo(st)
@@ -115,8 +131,8 @@ if pdf is not None:
                 mostrar_resultado_atual_cargas(st, resultado, numero_nf)
 
     elif transportadora_id == "rodonaves":
-        username = _credencial_rodonaves("RODONAVES_API_USERNAME")
-        password = _credencial_rodonaves("RODONAVES_API_PASSWORD")
+        username = _credencial("RODONAVES_API_USERNAME")
+        password = _credencial("RODONAVES_API_PASSWORD")
 
         if not username or not password:
             st.warning(
@@ -142,6 +158,35 @@ if pdf is not None:
                 with st.spinner("Consultando..."):
                     resultado = consultar_rodonaves(cnpj_cpf, numero_nf, username, password)
                 mostrar_resultado_rodonaves(st, resultado, numero_nf)
+
+    elif transportadora_id == "expresso_sao_miguel":
+        credenciais = _credenciais_sao_miguel()
+
+        if not credenciais:
+            st.warning(
+                "Credenciais da API da Expresso São Miguel não configuradas - caindo pro modo manual."
+            )
+            mostrar_portal_manual(
+                st,
+                {
+                    "nome": "Expresso São Miguel",
+                    "url": "https://portaldocliente.expressosaomiguel.com.br/rastrear-mercadoria",
+                    "instrucoes": (
+                        "No portal, selecione o tipo 'NF-e', cole a chave/número da NF-e "
+                        "e o CPF/CNPJ, digite a chave de segurança que aparecer na tela "
+                        "e clique em Consultar."
+                    ),
+                },
+                cnpj_cpf,
+                numero_nf,
+            )
+        elif st.button("🔎 Rastrear na Expresso São Miguel", type="primary"):
+            if not cnpj_cpf or not numero_nf:
+                st.error("Preenche CPF/CNPJ e número da NF antes de rastrear.")
+            else:
+                with st.spinner("Consultando..."):
+                    resultado = consultar_sao_miguel(cnpj_cpf, numero_nf, credenciais)
+                mostrar_resultado_sao_miguel(st, resultado, numero_nf)
 
     else:
         portal = get_portal(transportadora_id)
