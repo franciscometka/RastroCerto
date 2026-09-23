@@ -89,4 +89,9 @@ RODONAVES_AUTH_TYPE = "DEV"
 # ---------------------------------------------------------------------------
 USER_AGENT = "Mozilla/5.0 (compatible; Sebem-Rastreio/1.0)"
 HTTP_TIMEOUT = 20
-HTTP_RETRIES = 3
+# 5 tentativas com backoff 1.0 (1s, 2s, 4s, 8s, 16s ~ até 31s de espera total)
+# - subiu de 3/0.5 depois de falhas de DNS transitórias no container do
+# Streamlit Cloud (tracking-apigateway.rte.com.br, domínio saudável testado
+# de fora, então o problema é rede interna do Cloud, não do lado de cá).
+HTTP_RETRIES = 5
+HTTP_BACKOFF_FACTOR = 1.0

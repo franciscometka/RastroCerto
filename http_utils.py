@@ -11,7 +11,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from config import HTTP_RETRIES, HTTP_TIMEOUT, USER_AGENT
+from config import HTTP_BACKOFF_FACTOR, HTTP_RETRIES, HTTP_TIMEOUT, USER_AGENT
 
 _STATUS_RETRY = (429, 500, 502, 503, 504)
 
@@ -20,17 +20,22 @@ def _montar_retry() -> Retry:
     # allowed_methods é o nome atual (urllib3 >= 1.26); versões antigas usavam
     # method_whitelist. Como GET e POST aqui são consultas idempotentes de
     # rastreio, dá pra permitir retry nos dois com segurança.
+    #
+    # total=5 cobre também falhas de conexão (DNS, timeout de conexão), não
+    # só os status HTTP em status_forcelist - é o que salva a consulta
+    # quando o problema é tipo "NameResolutionError" transitório do lado do
+    # Streamlit Cloud, não um erro de verdade da API.
     try:
         return Retry(
             total=HTTP_RETRIES,
-            backoff_factor=0.5,
+            backoff_factor=HTTP_BACKOFF_FACTOR,
             status_forcelist=_STATUS_RETRY,
             allowed_methods=frozenset(["GET", "POST"]),
         )
     except TypeError:  # urllib3 antigo
         return Retry(
             total=HTTP_RETRIES,
-            backoff_factor=0.5,
+            backoff_factor=HTTP_BACKOFF_FACTOR,
             status_forcelist=_STATUS_RETRY,
             method_whitelist=frozenset(["GET", "POST"]),
         )
